@@ -94,6 +94,11 @@ contract Teller is Ownable, ReentrancyGuard {
         );
         _;
     }
+    modifier isTellerClosed() {
+
+        require(!tellerOpen, "Teller: Still Active.");
+        _;
+    }
 
     /**
      * @dev Constructor function
@@ -144,6 +149,27 @@ contract Teller is Ownable, ReentrancyGuard {
 
         emit NewCommitmentAdded(_bonus, _days, _penalty, _deciAdjustment);
     }
+    
+    function tellerClosedWithdraw() isTellerClosed{
+        uint256 contractBalance = LpToken.balanceOf(address(this));
+        require(contractBalance != 0, "Teller: Empty.")
+
+        Provider storage user = providerInfo[msg.sender];
+
+        uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
+            totalLP;
+        totalLP -= user.LPDepositedRatio;
+        user.LPDepositedRatio = 0;
+        claim();
+        totalWeight -= user.userWeight;
+        user.userWeight = 0;
+
+        user = new Provider();
+
+        LpToken.safeTransfer(msg.sender, userTokens);
+        emit Withdrew(msg.sender, _amount);
+
+    } 
 
     /**
      * @dev External function to toggle the commitment. This function can be called by only owner.
