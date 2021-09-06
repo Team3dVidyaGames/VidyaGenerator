@@ -156,7 +156,7 @@ contract Teller is Ownable, ReentrancyGuard {
         claim();
 
         Provider memory user = providerInfo[msg.sender];
-        
+
         uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
             totalLP;
         totalLP -= user.LPDepositedRatio;
@@ -359,7 +359,7 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to claim the vidya token. This function can be called by only provider and teller must be opened.
+     * @dev Private function to claim the vidya token.
      */
     function claim() private {
         Provider storage user = providerInfo[msg.sender];
@@ -381,7 +381,7 @@ contract Teller is Ownable, ReentrancyGuard {
 
         uint256 timeWeight = timeGap * user.userWeight;
 
-        providerInfo[msg.sender].lastClaimedTime = block.timestamp;
+        user.lastClaimedTime = block.timestamp;
 
         Vault.payProvider(msg.sender, timeWeight, totalWeight);
 
@@ -430,7 +430,7 @@ contract Teller is Ownable, ReentrancyGuard {
     /**
      * @dev External function to claim the vidya token. This function can be called by only provider and teller must be opened.
      */
-    function claimExternal() external isTellerOpen isProvider {
+    function claimExternal() external isTellerOpen isProvider nonReentrant {
         claim();
     }
 

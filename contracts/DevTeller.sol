@@ -13,7 +13,7 @@ contract DevTeller is Ownable, ReentrancyGuard {
     using Address for address;
 
     /// @notice Event emitted only on construction.
-    event TellerDeployed();
+    event DevTellerDeployed();
 
     /// @notice Event emitted when teller toggled.
     event TellerToggled(address teller, bool status);
@@ -21,96 +21,113 @@ contract DevTeller is Ownable, ReentrancyGuard {
     /// @notice Event emitted when provider claimed.
     event Claimed(address provider, bool success);
 
-    /// @notice Event emitted when a new developer is added
-    event newDeveloper(address developer);
+    /// @notice Event emitted when a new developer is added.
+    event newDeveloperAdded(address developer);
 
-    /// @notice Event emitted when a developer is removed
+    /// @notice Event emitted when a developer is removed.
     event devRemoved(address developer);
 
-    /// @notice Event emitted when
+    /// @notice Event emitted when weight of developer is changed.
     event weightChanged(address developer, uint256 weight);
-
-
 
     IVault Vault;
 
-    
-    struct Developer{
-
+    struct Developer {
         uint256 weight;
         uint256 lastClaim;
-        uint256 isDeveloper;
-
+        bool isDeveloper;
     }
 
-    mapping(address=> Developer) developers;
+    mapping(address => Developer) developers;
     uint256 totalWeight;
     uint256 tellerClosedTime;
 
-    bool tellerOpen;
+    bool devTellerOpen;
 
-    modifier isTellerOpen() {
-        require(tellerOpen, "Teller: Teller is not opened.");
+    modifier isDevTellerOpen() {
+        require(devTellerOpen, "DevTeller: DevTeller is not opened.");
         _;
     }
 
-    modifier isDeveloper() {
+    modifier onlyDeveloper() {
         require(
             developers[msg.sender].isDeveloper,
-            "Teller: Caller is not a developer."
+            "DevTeller: Caller is not a developer."
         );
         _;
     }
 
     /**
      * @dev Constructor function
-     * @param _LpToken Interface of LP token
      * @param _Vault Interface of Vault
      */
-    constructor( IVault _Vault) {
-
+    constructor(IVault _Vault) {
         Vault = _Vault;
 
-        emit TellerDeployed();
+        emit DevTellerDeployed();
     }
 
     /**
      * @dev External function to toggle the teller. This function can be called by only owner.
      */
     function toggleTeller() external onlyOwner {
-        if (!(tellerOpen = !tellerOpen)) {
+        if (!(devTellerOpen = !devTellerOpen)) {
             tellerClosedTime = block.timestamp;
         }
 
-        emit TellerToggled(address(this), tellerOpen);
+        emit TellerToggled(address(this), devTellerOpen);
     }
 
-
-    function addDeveloper(address _dev, uint256 _weight) onlyOwner isTellerOpen{
-        require(!developers[_dev].isDeveloper, "Teller: Already a developer");
+    /**
+     * @dev External function to add the developer. This function can be called by only owner.
+     * @param _dev Developer Address
+     * @param _weight Developer Weight
+     */
+    function addDeveloper(address _dev, uint256 _weight)
+        external
+        onlyOwner
+        isDevTellerOpen
+    {
+        require(
+            !developers[_dev].isDeveloper,
+            "DevTeller: Already a developer"
+        );
 
         developers[_dev].weight = _weight;
         developers[_dev].lastClaim = block.timestamp;
         developers[_dev].isDeveloper = true;
         totalWeight += _weight;
-        emit newDeveloper(_dev)
+
+        emit newDeveloperAdded(_dev);
     }
 
-    function changeDeveloperWeight(address _dev, uint256 _weight, bool add_Subtract) onlyOwner{
-        
-        require(developers[_dev].isDeveloper, "Teller: Not currently a developer");
+    /**
+     * @dev External function to change the weight of developer. This function can be called by only owner.
+     * @param _dev Developer Address
+     * @param _weight Developer Weight
+     * @param _isAdd If true, add the weight of dev else subtract the weight of dev.
+     */
+    function changeDeveloperWeight(
+        address _dev,
+        uint256 _weight,
+        bool _isAdd
+    ) external onlyOwner {
+        require(
+            developers[_dev].isDeveloper,
+            "DevTeller: Not currently a developer"
+        );
         Developer storage dev = developers[_dev];
         claim(_dev);
-        if(add_Subtract){
+        if (_isAdd) {
             dev.weight += _weight;
             totalWeight += _weight;
-        }else{
-            if(dev.weight > _weight){
+        } else {
+            if (dev.weight > _weight) {
                 dev.weight -= _weight;
                 totalWeight -= _weight;
-            }else{
+            } else {
                 totalWeight -= dev.weight;
-                dev.weight =0;
+                dev.weight = 0;
                 dev.isDeveloper = false;
                 emit devRemoved(_dev);
             }
@@ -118,32 +135,38 @@ contract DevTeller is Ownable, ReentrancyGuard {
         emit weightChanged(_dev, developers[_dev].weight);
     }
 
-    function removeDeveloper(address _dev) onlyOwner{
-
-        require(developers[_dev].isDeveloper, "Teller: Not currently a developer");
+    /**
+     * @dev External function to remove the developer. This function can be called by only owner.
+     * @param _dev Developer Address
+     */
+    function removeDeveloper(address _dev) external onlyOwner {
+        require(
+            developers[_dev].isDeveloper,
+            "DevTeller: Not currently a developer"
+        );
         claim(_dev);
-        Developer storage dev = developers[_dev];
+        Developer memory dev = developers[_dev];
         totalWeight -= dev.weight;
-        dev.weight = 0;
-        dev.isDeveloper = false;
+
+        delete developers[_dev];
 
         emit devRemoved(_dev);
-
-
     }
 
-
-
-    function claim(address _dev) private{
+    /**
+     * @dev Private function to claim the vidya token.
+     * @param _dev Developer Address
+     */
+    function claim(address _dev) private {
         Developer storage dev = developers[_dev];
 
         uint256 timeGap = block.timestamp - dev.lastClaim;
 
-        if (!tellerOpen) {
+        if (!devTellerOpen) {
             timeGap = tellerClosedTime - dev.lastClaim;
         }
 
-        uint256 timeWeight = timeGap * dev.Weight;
+        uint256 timeWeight = timeGap * dev.weight;
 
         dev.lastClaim = block.timestamp;
 
@@ -155,8 +178,12 @@ contract DevTeller is Ownable, ReentrancyGuard {
     /**
      * @dev External function to claim the vidya token. This function can be called by only developer and teller must be opened.
      */
-    function externalClaim() external isDeveloper nonReentrant{
+    function externalClaim()
+        external
+        onlyDeveloper
+        nonReentrant
+        isDevTellerOpen
+    {
         claim(msg.sender);
     }
-
 }
