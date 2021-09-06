@@ -149,26 +149,6 @@ contract Teller is Ownable, ReentrancyGuard {
         emit NewCommitmentAdded(_bonus, _days, _penalty, _deciAdjustment);
     }
 
-    function tellerClosedWithdraw() external isTellerClosed {
-        uint256 contractBalance = LpToken.balanceOf(address(this));
-        require(contractBalance != 0, "Teller: Contract balance is zero.");
-
-        claim();
-
-        Provider memory user = providerInfo[msg.sender];
-
-        uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
-            totalLP;
-        totalLP -= user.LPDepositedRatio;
-        totalWeight -= user.userWeight;
-
-        delete providerInfo[msg.sender];
-
-        LpToken.safeTransfer(msg.sender, userTokens);
-
-        emit Withdrew(msg.sender, userTokens);
-    }
-
     /**
      * @dev External function to toggle the commitment. This function can be called by only owner.
      * @param _index Commitment index
@@ -252,6 +232,29 @@ contract Teller is Ownable, ReentrancyGuard {
         LpToken.safeTransfer(msg.sender, _amount);
 
         emit Withdrew(msg.sender, _amount);
+    }
+
+    /**
+     * @dev External function to withdraw lp token when teller is closed. This function can be called by only provider.
+     */
+    function tellerClosedWithdraw() external isTellerClosed isProvider {
+        uint256 contractBalance = LpToken.balanceOf(address(this));
+        require(contractBalance != 0, "Teller: Contract balance is zero.");
+
+        claim();
+
+        Provider memory user = providerInfo[msg.sender];
+
+        uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
+            totalLP;
+        totalLP -= user.LPDepositedRatio;
+        totalWeight -= user.userWeight;
+
+        delete providerInfo[msg.sender];
+
+        LpToken.safeTransfer(msg.sender, userTokens);
+
+        emit Withdrew(msg.sender, userTokens);
     }
 
     /**
