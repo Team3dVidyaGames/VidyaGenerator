@@ -209,4 +209,43 @@ contract("Teller", (accounts) => {
             assert.equal(new BN(await lptoken_contract.balanceOf(accounts[1])).toString(), new BN('9386666666666666666666').toString());
         });
     });
+
+    describe("Withdraw when teller is closed.", () => {
+        it("Teller is not closed.", async () => {
+            let thrownError;
+            try {
+                await teller_contract.tellerClosedWithdraw({ from: accounts[1] });
+            } catch (error) {
+                thrownError = error;
+            }
+
+            assert.include(
+                thrownError.message,
+                "Teller: Teller is still active.",
+            )
+        });
+
+        it("Caller is not the provider.", async () => {
+            await teller_contract.toggleTeller({ from: accounts[0] });
+            let thrownError;
+            try {
+                await teller_contract.tellerClosedWithdraw({ from: accounts[7] });
+            } catch (error) {
+                thrownError = error;
+            }
+
+            assert.include(
+                thrownError.message,
+                "Teller: Caller is not the provider.",
+            )
+        });
+
+        it("Withdrawing when teller is closed is working.", async () => {
+            assert.equal(new BN(await lptoken_contract.balanceOf(accounts[1])).toString(), new BN('9386666666666666666666').toString());
+            assert.equal(new BN(await lptoken_contract.balanceOf(teller_contract.address)).toString(), new BN('2613333333333333333334').toString());
+            await teller_contract.tellerClosedWithdraw({ from: accounts[1] });
+            assert.equal(new BN(await lptoken_contract.balanceOf(accounts[1])).toString(), new BN('9806366880799428979298').toString());
+            assert.equal(new BN(await lptoken_contract.balanceOf(teller_contract.address)).toString(), new BN('2193633119200571020702').toString());
+        });
+    });
 });
