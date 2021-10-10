@@ -212,6 +212,10 @@ contract Teller is Ownable, ReentrancyGuard {
     function withdraw(uint256 _amount) external isProvider nonReentrant {
         Provider storage user = providerInfo[msg.sender];
         uint256 contractBalance = LpToken.balanceOf(address(this));
+        if (user.commitmentEndTime <= block.timestamp) {
+            user.committedAmount = 0;
+            user.commitmentIndex = 0;
+        }
         uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
             totalLP;
         require(
