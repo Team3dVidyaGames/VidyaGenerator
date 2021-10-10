@@ -30,19 +30,20 @@ contract DevTeller is Ownable, ReentrancyGuard {
     /// @notice Event emitted when weight of developer is changed.
     event weightChanged(address developer, uint256 weight);
 
-    IVault Vault;
-
     struct Developer {
         uint256 weight;
         uint256 lastClaim;
         bool isDeveloper;
     }
 
-    mapping(address => Developer) developers;
-    uint256 totalWeight;
-    uint256 tellerClosedTime;
+    IVault public Vault;
 
-    bool devTellerOpen;
+    mapping(address => Developer) public developers;
+
+    uint256 public totalWeight;
+    uint256 public tellerClosedTime;
+
+    bool public devTellerOpen;
 
     modifier isDevTellerOpen() {
         require(devTellerOpen, "DevTeller: DevTeller is not opened.");

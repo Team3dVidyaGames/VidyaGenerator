@@ -29,15 +29,15 @@ contract Vault is Ownable, ReentrancyGuard {
     /// @notice Event emitted when vidya token rate calculated.
     event VidyaRateCalculated(uint256 vidyaRate);
 
-    IERC20 Vidya;
+    IERC20 public Vidya;
 
-    mapping(address => bool) teller;
-    mapping(address => uint256) tellerPriority;
-    mapping(address => uint256) priorityFreeze;
+    mapping(address => bool) public teller;
+    mapping(address => uint256) public tellerPriority;
+    mapping(address => uint256) public priorityFreeze;
 
-    uint256 totalPriority;
-    uint256 vidyaRate;
-    uint256 timeToCalculateRate;
+    uint256 public totalPriority;
+    uint256 public vidyaRate;
+    uint256 public timeToCalculateRate;
 
     modifier onlyTeller() {
         require(teller[msg.sender], "Vault: Caller is not the teller.");

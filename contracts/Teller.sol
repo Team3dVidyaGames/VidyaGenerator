@@ -50,9 +50,6 @@ contract Teller is Ownable, ReentrancyGuard {
     /// @notice Event emitted when provider claimed.
     event Claimed(address provider, bool success);
 
-    IVault Vault;
-    IERC20 LpToken;
-
     struct Provider {
         uint256 LPDepositedRatio;
         uint256 userWeight;
@@ -70,17 +67,21 @@ contract Teller is Ownable, ReentrancyGuard {
         bool isActive;
     }
 
-    uint256 totalLP;
-    uint256 totalWeight;
-    uint256 tellerClosedTime;
+    IVault public Vault;
+    IERC20 public LpToken;
 
-    mapping(address => Provider) providerInfo;
+    uint256 public totalLP;
+    uint256 public totalWeight;
+    uint256 public tellerClosedTime;
 
-    bool tellerOpen;
-    address devAddress;
-    bool purpose;
+    bool public tellerOpen;
+    bool public purpose;
 
-    Commitment[] commitmentInfo;
+    address public devAddress;
+
+    Commitment[] public commitmentInfo;
+
+    mapping(address => Provider) public providerInfo;
 
     modifier isTellerOpen() {
         require(tellerOpen, "Teller: Teller is not opened.");
