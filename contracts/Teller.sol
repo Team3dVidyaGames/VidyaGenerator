@@ -451,12 +451,21 @@ contract Teller is Ownable, ReentrancyGuard {
                 LpToken.balanceOf(address(this))) / totalLP;
     }
 
-
     /**
-     * @dev External function to get time of rest committed time. This function can be called when only current commit is active.
+     * @dev External function to get commitment info. This function can be called when only current commit is active.
      * @return Time of rest committed time
+     * @return Committed amount
+     * @return Current commitment index
      */
-    function getCommittedInfo() external view returns (uint256, uint256, uint256) {
+    function getCommittedInfo()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         Provider memory user = providerInfo[msg.sender];
         Commitment memory currentCommit = commitmentInfo[user.commitmentIndex];
 
@@ -465,6 +474,10 @@ contract Teller is Ownable, ReentrancyGuard {
             "Teller: Current commitment is closed"
         );
 
-        return (user.commitmentEndTime - block.timestamp, user.commitedAmount, user.commitmentIndex);
+        return (
+            user.commitmentEndTime - block.timestamp,
+            user.committedAmount,
+            user.commitmentIndex
+        );
     }
 }
