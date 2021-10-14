@@ -450,4 +450,36 @@ contract Teller is Ownable, ReentrancyGuard {
             (providerInfo[msg.sender].LPDepositedRatio *
                 LpToken.balanceOf(address(this))) / totalLP;
     }
+
+    /**
+     * @dev External function to get the committed amount. This function can be called when only current commit is active.
+     * @return Committed amount of user holds
+     */
+    function getCommittedAmount() external view returns (uint256) {
+        Provider memory user = providerInfo[msg.sender];
+        Commitment memory currentCommit = commitmentInfo[user.commitmentIndex];
+
+        require(
+            user.commitmentEndTime > block.timestamp && currentCommit.isActive,
+            "Teller: Current commitment is closed"
+        );
+
+        return user.committedAmount;
+    }
+
+    /**
+     * @dev External function to get time of rest committed time. This function can be called when only current commit is active.
+     * @return Time of rest committed time
+     */
+    function getCommittedTime() external view returns (uint256) {
+        Provider memory user = providerInfo[msg.sender];
+        Commitment memory currentCommit = commitmentInfo[user.commitmentIndex];
+
+        require(
+            user.commitmentEndTime > block.timestamp && currentCommit.isActive,
+            "Teller: Current commitment is closed"
+        );
+
+        return user.commitmentEndTime - block.timestamp;
+    }
 }
