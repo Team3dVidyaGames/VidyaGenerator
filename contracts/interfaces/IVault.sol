@@ -5,9 +5,10 @@ pragma solidity ^0.8.6;
  * @title Vault Interface
  */
 interface IVault {
-    uint256 public vidyaRate;
-    uint256 public totalPriority;
-    mapping(address => tellerPriority) public tellerPriority;
+
+    function vidyaRate() external returns(uint256);
+    function totalPriority() external returns(uint256);
+    function tellerPriority(address _tellerID)external returns (uint256);
     
     /**
      * @dev External function to add the teller. This function can be called by only owner.
