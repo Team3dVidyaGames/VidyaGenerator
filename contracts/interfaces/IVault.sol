@@ -5,6 +5,10 @@ pragma solidity ^0.8.6;
  * @title Vault Interface
  */
 interface IVault {
+    uint256 public vidyaRate;
+    uint256 public totalPriority;
+    mapping(address => tellerPriority) public tellerPriority;
+    
     /**
      * @dev External function to add the teller. This function can be called by only owner.
      * @param teller Address of teller
