@@ -457,27 +457,31 @@ contract Teller is Ownable, ReentrancyGuard {
      * @return Committed amount
      * @return Current commitment index
      */
-    function getCommittedInfo()
+    function getUserInfo()
         external
         view
         returns (
+            uint256,
+            uint256,
             uint256,
             uint256,
             uint256
         )
     {
         Provider memory user = providerInfo[msg.sender];
-        Commitment memory currentCommit = commitmentInfo[user.commitmentIndex];
 
         require(
-            user.commitmentEndTime > block.timestamp && currentCommit.isActive,
-            "Teller: Current commitment is closed"
+            user.userLPDepositedRatio > 0,
+            "Teller: Current user is not deposited."
         );
 
         return (
             user.commitmentEndTime - block.timestamp,
             user.committedAmount,
-            user.commitmentIndex
+            user.commitmentIndex, 
+            (Vault.vidyaRate * Vault.tellerPriority[address(this)] *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority),
+            (providerInfo[msg.sender].LPDepositedRatio *
+                LpToken.balanceOf(address(this))) / totalLP
         );
     }
 }
