@@ -481,7 +481,7 @@ contract Teller is Ownable, ReentrancyGuard {
                 user.commitmentEndTime - block.timestamp,
                 user.committedAmount,
                 user.commitmentIndex, 
-                (Vault.vidyaRate * Vault.tellerPriority[address(this)] *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority),
+                (Vault.vidyaRate() * Vault.tellerPriority(address(this)) *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority()),
                 (providerInfo[msg.sender].LPDepositedRatio *
                     LpToken.balanceOf(address(this))) / totalLP
         );}
@@ -489,7 +489,7 @@ contract Teller is Ownable, ReentrancyGuard {
             return (0,
                 0,
                 0, 
-                (Vault.vidyaRate * Vault.tellerPriority[address(this)] *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority),
+                (Vault.vidyaRate() * Vault.tellerPriority(address(this)) *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority()),
                 (providerInfo[msg.sender].LPDepositedRatio *
                     LpToken.balanceOf(address(this))) / totalLP
         );
