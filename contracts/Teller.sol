@@ -443,12 +443,10 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to get user LpTokens owned.
+     * @dev External function to get CommitmentInfo.
      */
-    function userLPTokens() external view returns (uint256) {
-        return
-            (providerInfo[msg.sender].LPDepositedRatio *
-                LpToken.balanceOf(address(this))) / totalLP;
+    function getCommitmentMethods() external view returns (Commitment[] memory) {
+        return commitmentInfo;
     }
 
     /**
