@@ -452,10 +452,12 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to get commitment info. This function can be called when only current commit is active.
+     * @dev External function to get User info. This function can be called when only current user has deposits.
      * @return Time of rest committed time
      * @return Committed amount
-     * @return Current commitment index
+     * @return Committed Index
+     * @return Amount to Claim
+     * @return Total LP deposited
      */
     function getUserInfo()
         external
@@ -474,14 +476,26 @@ contract Teller is Ownable, ReentrancyGuard {
             user.userLPDepositedRatio > 0,
             "Teller: Current user is not deposited."
         );
+        
+        if(user.commitmentEndTime > block.timestamp){
 
-        return (
-            user.commitmentEndTime - block.timestamp,
-            user.committedAmount,
-            user.commitmentIndex, 
-            (Vault.vidyaRate * Vault.tellerPriority[address(this)] *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority),
-            (providerInfo[msg.sender].LPDepositedRatio *
-                LpToken.balanceOf(address(this))) / totalLP
+            return (
+                user.commitmentEndTime - block.timestamp,
+                user.committedAmount,
+                user.commitmentIndex, 
+                (Vault.vidyaRate * Vault.tellerPriority[address(this)] *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority),
+                (providerInfo[msg.sender].LPDepositedRatio *
+                    LpToken.balanceOf(address(this))) / totalLP
+        );}
+        else{
+            return (0,
+                0,
+                0, 
+                (Vault.vidyaRate * Vault.tellerPriority[address(this)] *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority),
+                (providerInfo[msg.sender].LPDepositedRatio *
+                    LpToken.balanceOf(address(this))) / totalLP
         );
+        }
+        
     }
 }
