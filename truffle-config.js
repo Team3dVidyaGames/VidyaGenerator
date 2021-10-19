@@ -1,5 +1,6 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const secretKovan = require("./secret.kovan.json");
+const secretRopsten = require("./secret.ropsten.json");
 
 module.exports = {
   // Uncommenting the defaults below
@@ -16,6 +17,16 @@ module.exports = {
           `https://kovan.infura.io/v3/${secretKovan.infura_api_key}`
         ),
       network_id: 42,
+      timeoutBlocks: 50000,
+      skipDryRun: true,
+    },
+    ropsten: {
+      provider: () =>
+        new HDWalletProvider( 
+          secretKovan.mnemonic,
+          `https://ropsten.infura.io/v3/${secretKovan.infura_api_key}`
+        ),
+      network_id: 3,
       timeoutBlocks: 50000,
       skipDryRun: true,
     },

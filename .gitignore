@@ -2,5 +2,5 @@
 /node_modules
 .env
 secret.kovan.json
-secret.mumbai.json
+secret.ropsten.json
 /public
