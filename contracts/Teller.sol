@@ -492,11 +492,11 @@ contract Teller is Ownable, ReentrancyGuard {
                     claimAmount,
                     totalLPDeposited
                 );
-            } else {
+            }else {
                 return (0, 0, 0, claimAmount, totalLPDeposited);
-            }else{
-                return (0,0,0,0,0);
-            }
+                }
+        }else{
+            return (0,0,0,0,0);
         }
     }
 }
