@@ -474,29 +474,29 @@ contract Teller is Ownable, ReentrancyGuard {
     {
         Provider memory user = providerInfo[msg.sender];
 
-        require(
-            user.LPDepositedRatio > 0,
-            "Teller: Current user is not deposited"
-        );
+        if(user.LPDepositedRatio > 0){
 
-        uint256 claimAmount = (Vault.vidyaRate() *
-            Vault.tellerPriority(address(this)) *
-            (block.timestamp - user.lastClaimedTime) *
-            user.userWeight) / (totalWeight * Vault.totalPriority());
+            uint256 claimAmount = (Vault.vidyaRate() *
+                Vault.tellerPriority(address(this)) *
+                (block.timestamp - user.lastClaimedTime) *
+                user.userWeight) / (totalWeight * Vault.totalPriority());
 
-        uint256 totalLPDeposited = (providerInfo[msg.sender].LPDepositedRatio *
-            LpToken.balanceOf(address(this))) / totalLP;
+            uint256 totalLPDeposited = (providerInfo[msg.sender].LPDepositedRatio *
+                LpToken.balanceOf(address(this))) / totalLP;
 
-        if (user.commitmentEndTime > block.timestamp) {
-            return (
-                user.commitmentEndTime - block.timestamp,
-                user.committedAmount,
-                user.commitmentIndex,
-                claimAmount,
-                totalLPDeposited
-            );
-        } else {
-            return (0, 0, 0, claimAmount, totalLPDeposited);
+            if (user.commitmentEndTime > block.timestamp) {
+                return (
+                    user.commitmentEndTime - block.timestamp,
+                    user.committedAmount,
+                    user.commitmentIndex,
+                    claimAmount,
+                    totalLPDeposited
+                );
+            } else {
+                return (0, 0, 0, claimAmount, totalLPDeposited);
+            }else{
+                return (0,0,0,0,0);
+            }
         }
     }
 }
