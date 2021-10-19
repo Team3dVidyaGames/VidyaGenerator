@@ -445,7 +445,11 @@ contract Teller is Ownable, ReentrancyGuard {
     /**
      * @dev External function to get CommitmentInfo.
      */
-    function getCommitmentMethods() external view returns (Commitment[] memory) {
+    function getCommitmentMethods()
+        external
+        view
+        returns (Commitment[] memory)
+    {
         return commitmentInfo;
     }
 
@@ -471,29 +475,28 @@ contract Teller is Ownable, ReentrancyGuard {
         Provider memory user = providerInfo[msg.sender];
 
         require(
-            user.userLPDepositedRatio > 0,
-            "Teller: Current user is not deposited."
+            user.LPDepositedRatio > 0,
+            "Teller: Current user is not deposited"
         );
-        
-        if(user.commitmentEndTime > block.timestamp){
 
+        uint256 claimAmount = (Vault.vidyaRate() *
+            Vault.tellerPriority(address(this)) *
+            (block.timestamp - user.lastClaimedTime) *
+            user.userWeight) / (totalWeight * Vault.totalPriority());
+
+        uint256 totalLPDeposited = (providerInfo[msg.sender].LPDepositedRatio *
+            LpToken.balanceOf(address(this))) / totalLP;
+
+        if (user.commitmentEndTime > block.timestamp) {
             return (
                 user.commitmentEndTime - block.timestamp,
                 user.committedAmount,
-                user.commitmentIndex, 
-                (Vault.vidyaRate() * Vault.tellerPriority(address(this)) *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority()),
-                (providerInfo[msg.sender].LPDepositedRatio *
-                    LpToken.balanceOf(address(this))) / totalLP
-        );}
-        else{
-            return (0,
-                0,
-                0, 
-                (Vault.vidyaRate() * Vault.tellerPriority(address(this)) *(block.timestamp-user.lastClaimedTime) * user.userWeight) / (totalWeigt * Vault.totalPriority()),
-                (providerInfo[msg.sender].LPDepositedRatio *
-                    LpToken.balanceOf(address(this))) / totalLP
-        );
+                user.commitmentIndex,
+                claimAmount,
+                totalLPDeposited
+            );
+        } else {
+            return (0, 0, 0, claimAmount, totalLPDeposited);
         }
-        
     }
 }

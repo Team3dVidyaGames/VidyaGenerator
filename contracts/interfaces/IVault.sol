@@ -5,11 +5,22 @@ pragma solidity ^0.8.6;
  * @title Vault Interface
  */
 interface IVault {
+    /**
+     * @dev External function to get vidya rate.
+     */
+    function vidyaRate() external view returns (uint256);
 
-    function vidyaRate() external returns(uint256);
-    function totalPriority() external returns(uint256);
-    function tellerPriority(address _tellerID)external returns (uint256);
-    
+    /**
+     * @dev External function to get total priority.
+     */
+    function totalPriority() external view returns (uint256);
+
+    /**
+     * @dev External function to get teller priority.
+     * @param tellerId Teller Id
+     */
+    function tellerPriority(address tellerId) external view returns (uint256);
+
     /**
      * @dev External function to add the teller. This function can be called by only owner.
      * @param teller Address of teller
