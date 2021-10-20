@@ -230,19 +230,21 @@ contract Teller is Ownable, ReentrancyGuard {
         uint256 oldRatio = user.LPDepositedRatio;
         uint256 difference =totalLP-oldRatio;
         uint256 newRatio;
-        if( difference == 0){
-            if(contractBalance - _amount == 0){
-                newRatio = 0;
-                totalLP =0;
-            }else{            
+        if( difference != 0){
+            newRatio = ((userTokens - _amount) * (difference)) /
+                (contractBalance - _amount);
+            totalLP = totalLP - oldRatio + newRatio;        
+        
+        }else{
+            if(contractBalance - _amount != 0){
                 newRatio = (userTokens - _amount) /
                     (contractBalance - _amount);
                 totalLP = totalLP - oldRatio + newRatio;
+            
+            }else{            
+                totalLP =0;
             }
-        }else{
-            newRatio = ((userTokens - _amount) * (difference)) /
-                (contractBalance - _amount);
-            totalLP = totalLP - oldRatio + newRatio;
+            
         }
         user.LPDepositedRatio = newRatio;
 
