@@ -228,10 +228,16 @@ contract Teller is Ownable, ReentrancyGuard {
         totalWeight -= _weightChange;
 
         uint256 oldRatio = user.LPDepositedRatio;
-        uint256 newRatio = ((userTokens - _amount) * (totalLP - oldRatio)) /
-            (contractBalance - _amount);
-
-        totalLP = totalLP - oldRatio + newRatio;
+        uint256 difference =totalLP-oldRatio;
+        uint256 newRatio;
+        if( difference == 0){
+            newRatio = 0;
+            totalLP =0
+        }else{
+            newRatio = ((userTokens - _amount) * (difference)) /
+                (contractBalance - _amount);
+            totalLP = totalLP - oldRatio + newRatio;
+        }
         user.LPDepositedRatio = newRatio;
 
         LpToken.safeTransfer(msg.sender, _amount);
