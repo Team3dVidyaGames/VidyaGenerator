@@ -228,24 +228,23 @@ contract Teller is Ownable, ReentrancyGuard {
         totalWeight -= _weightChange;
 
         uint256 oldRatio = user.LPDepositedRatio;
-        uint256 difference =totalLP-oldRatio;
+        uint256 difference = totalLP - oldRatio;
         uint256 newRatio;
-        if( difference != 0){
-            newRatio = ((userTokens - _amount) * (difference)) /
+
+        if (difference != 0) {
+            newRatio =
+                ((userTokens - _amount) * (difference)) /
                 (contractBalance - _amount);
-            totalLP = totalLP - oldRatio + newRatio;        
-        
-        }else{
-            if(contractBalance - _amount != 0){
-                newRatio = (userTokens - _amount) /
-                    (contractBalance - _amount);
+            totalLP = totalLP - oldRatio + newRatio;
+        } else {
+            if (contractBalance - _amount != 0) {
+                newRatio = (userTokens - _amount) / (contractBalance - _amount);
                 totalLP = totalLP - oldRatio + newRatio;
-            
-            }else{            
-                totalLP =0;
+            } else {
+                totalLP = 0;
             }
-            
         }
+
         user.LPDepositedRatio = newRatio;
 
         LpToken.safeTransfer(msg.sender, _amount);
@@ -488,15 +487,14 @@ contract Teller is Ownable, ReentrancyGuard {
     {
         Provider memory user = providerInfo[msg.sender];
 
-        if(user.LPDepositedRatio > 0){
-
+        if (user.LPDepositedRatio > 0) {
             uint256 claimAmount = (Vault.vidyaRate() *
                 Vault.tellerPriority(address(this)) *
                 (block.timestamp - user.lastClaimedTime) *
                 user.userWeight) / (totalWeight * Vault.totalPriority());
 
-            uint256 totalLPDeposited = (providerInfo[msg.sender].LPDepositedRatio *
-                LpToken.balanceOf(address(this))) / totalLP;
+            uint256 totalLPDeposited = (providerInfo[msg.sender]
+                .LPDepositedRatio * LpToken.balanceOf(address(this))) / totalLP;
 
             if (user.commitmentEndTime > block.timestamp) {
                 return (
@@ -506,11 +504,11 @@ contract Teller is Ownable, ReentrancyGuard {
                     claimAmount,
                     totalLPDeposited
                 );
-            }else {
+            } else {
                 return (0, 0, 0, claimAmount, totalLPDeposited);
-                }
-        }else{
-            return (0,0,0,0,0);
+            }
+        } else {
+            return (0, 0, 0, 0, 0);
         }
     }
 }
