@@ -14,19 +14,19 @@ contract Vault is Ownable, ReentrancyGuard {
     using Address for address;
     using SafeERC20 for IERC20;
 
-    /// @notice Event emitted only on construction.
+    /// @notice Event emitted on construction.
     event VaultDeployed();
 
-    /// @notice Event emitted when new teller added to vault.
+    /// @notice Event emitted when new teller is added to vault.
     event NewTellerAdded(address newTeller, uint256 priority);
 
-    /// @notice Event emitted when current priority changed.
+    /// @notice Event emitted when current priority is changed.
     event TellerPriorityChanged(address teller, uint256 newPriority);
 
-    /// @notice Event emitted when pay vidya token to provider.
+    /// @notice Event emitted when tokens are paid to provider.
     event ProviderPaid(address provider, uint256 vidyaAmount);
 
-    /// @notice Event emitted when vidya token rate calculated.
+    /// @notice Event emitted when token rate is calculated.
     event VidyaRateCalculated(uint256 vidyaRate);
 
     IERC20 public Vidya;
@@ -40,7 +40,7 @@ contract Vault is Ownable, ReentrancyGuard {
     uint256 public timeToCalculateRate;
 
     modifier onlyTeller() {
-        require(teller[msg.sender], "Vault: Caller is not the teller.");
+        require(teller[msg.sender], "Vault: Caller is not a teller.");
         _;
     }
 
@@ -55,17 +55,17 @@ contract Vault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to add the teller. This function can be called by only owner.
+     * @dev External function to add a teller. This function can be called only by the owner.
      * @param _teller Address of teller
      * @param _priority Priority of teller
      */
     function addTeller(address _teller, uint256 _priority) external onlyOwner {
         require(
             _teller.isContract() == true,
-            "Vault: Address is not the contract address."
+            "Vault: Address is not a contract."
         );
-        require(teller[_teller] == false, "Vault: Caller is a teller already.");
-        require(_priority > 0, "Vault: Priority should be more than zero.");
+        require(teller[_teller] == false, "Vault: Caller is already a teller.");
+        require(_priority > 0, "Vault: Priority should be greater than zero.");
 
         teller[_teller] = true;
         tellerPriority[_teller] = _priority;
@@ -76,23 +76,19 @@ contract Vault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to change the priority of teller. This function can be called by only owner.
+     * @dev External function to change the priority of a teller. This function can be called only by the owner.
      * @param _teller Address of teller
      * @param _newPriority New priority of teller
      */
-    function changePriority(address _teller, uint256 _newPriority)
-        external
-        onlyOwner
-    {
+    function changePriority(address _teller, uint256 _newPriority) external onlyOwner {
         require(
             _teller.isContract() == true,
-            "Vault: Address is not the contract address."
+            "Vault: Address is not a contract."
         );
-        require(teller[_teller], "Vault: Caller is not the teller.");
-        require(_newPriority >= 0, "Vault: Priority should be more than zero.");
+        require(teller[_teller], "Vault: Provided address is not a teller.");
         require(
             priorityFreeze[_teller] <= block.timestamp,
-            "Vault: Not time to change the priority."
+            "Vault: Priority freeze is still in effect."
         );
 
         uint256 _oldPriority = tellerPriority[_teller];
@@ -105,29 +101,22 @@ contract Vault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to pay the Vidya token to investors. This function can be called by only teller.
+     * @dev External function to pay depositors. This function can be called only by a teller.
      * @param _provider Address of provider
      * @param _providerTimeWeight Weight time of provider
      * @param _totalWeight Sum of provider weight
      */
-    function payProvider(
-        address _provider,
-        uint256 _providerTimeWeight,
-        uint256 _totalWeight
-    ) external onlyTeller {
-        uint256 numerator = vidyaRate *
-            _providerTimeWeight *
-            tellerPriority[msg.sender];
-
+    function payProvider(address _provider, uint256 _providerTimeWeight, uint256 _totalWeight) external onlyTeller {
+        uint256 numerator = vidyaRate * _providerTimeWeight * tellerPriority[msg.sender];
         uint256 denominator = _totalWeight * totalPriority;
 
-        uint256 amount = 0;
+        uint256 amount;
         if (denominator != 0) {
             amount = numerator / denominator;
         }
 
         if (timeToCalculateRate <= block.timestamp) {
-            calculateRate();
+            _calculateRate();
         }
 
         Vidya.safeTransfer(_provider, amount);
@@ -136,9 +125,9 @@ contract Vault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Private function to calculate the Vidya Rate.
+     * @dev Internal function to calculate the token Rate.
      */
-    function calculateRate() private {
+    function _calculateRate() internal {
         vidyaRate = Vidya.balanceOf(address(this)) / 26 weeks; // 6 months
         timeToCalculateRate = block.timestamp + 1 weeks;
 
@@ -146,13 +135,13 @@ contract Vault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to calculate the Vidya Rate.
+     * @dev External function to calculate the token Rate.
      */
-    function calculateRateExternal() external nonReentrant {
+    function calculateRate() external nonReentrant {
         require(
             timeToCalculateRate <= block.timestamp,
-            "Vault: Not time to adjust."
+            "Vault: Rate calculation not yet possible."
         );
-        calculateRate();
+        _calculateRate();
     }
 }
