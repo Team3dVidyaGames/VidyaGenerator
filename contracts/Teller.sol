@@ -368,7 +368,7 @@ contract Teller is Ownable, ReentrancyGuard {
 
         totalWeight -= user.userWeight;
 
-        delete providerInfo[msg.sender];
+        providerInfo[msg.sender] = Provider(0,0,0,0,0,0);
 
         if (purpose) {
             LpToken.safeTransfer(devAddress, fee / 10);
