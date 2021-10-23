@@ -15,39 +15,34 @@ contract Teller is Ownable, ReentrancyGuard {
     using Address for address;
     using SafeERC20 for IERC20;
 
-    /// @notice Event emitted only on construction.
+    /// @notice Event emitted on construction.
     event TellerDeployed();
 
-    /// @notice Event emitted when teller toggled.
+    /// @notice Event emitted when teller status is toggled.
     event TellerToggled(address teller, bool status);
 
-    /// @notice Event emitted when new commitment added.
-    event NewCommitmentAdded(
-        uint256 bonus,
-        uint256 time,
-        uint256 penalty,
-        uint256 deciAdjustment
-    );
+    /// @notice Event emitted when new commitment is added.
+    event NewCommitmentAdded(uint256 bonus, uint256 time, uint256 penalty, uint256 deciAdjustment);
 
-    /// @notice Event emitted when commitment toggled.
+    /// @notice Event emitted when commitment status is toggled.
     event CommitmentToggled(uint256 index, bool status);
 
-    /// @notice Event emitted when owner set the dev address to get the break commitment fees.
+    /// @notice Event emitted when owner sets the dev address to get the break commitment fees.
     event PurposeSet(address devAddress);
 
-    /// @notice Event emitted when provider deposit the lp tokens.
+    /// @notice Event emitted when a provider deposits lp tokens.
     event LpDeposited(address provider, uint256 amount);
 
-    /// @notice Event emitted when provider withdrew the lp tokens.
+    /// @notice Event emitted when a provider withdraws lp tokens.
     event Withdrew(address provider, uint256 amount);
 
-    /// @notice Event emitted when provider commit the lp tokens.
+    /// @notice Event emitted when a provider commits lp tokens.
     event Commited(address provider, uint256 commitedAmount);
 
-    /// @notice Event emitted when provider break the commitment.
+    /// @notice Event emitted when a provider breaks the commitment.
     event CommitmentBroke(address provider, uint256 tokenSentAmount);
 
-    /// @notice Event emitted when provider claimed.
+    /// @notice Event emitted when provider claimed rewards.
     event Claimed(address provider, bool success);
 
     struct Provider {
@@ -84,17 +79,15 @@ contract Teller is Ownable, ReentrancyGuard {
     mapping(address => Provider) public providerInfo;
 
     modifier isTellerOpen() {
-        require(tellerOpen, "Teller: Teller is not opened.");
+        require(tellerOpen, "Teller: Teller is not open.");
         _;
     }
 
     modifier isProvider() {
-        require(
-            providerInfo[msg.sender].LPDepositedRatio != 0,
-            "Teller: Caller is not the provider."
-        );
+        require(providerInfo[msg.sender].LPDepositedRatio != 0, "Teller: Caller is not a provider.");
         _;
     }
+    
     modifier isTellerClosed() {
         require(!tellerOpen, "Teller: Teller is still active.");
         _;
@@ -114,29 +107,22 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to toggle the teller. This function can be called by only owner.
+     * @dev External function to toggle the teller. This function can be called only by the owner.
      */
     function toggleTeller() external onlyOwner {
-        if (!(tellerOpen = !tellerOpen)) {
-            tellerClosedTime = block.timestamp;
-        }
-
+        tellerOpen = !tellerOpen;
+        tellerClosedTime = block.timestamp;
         emit TellerToggled(address(this), tellerOpen);
     }
 
     /**
-     * @dev External function to add the commitment. This function can be called by only owner.
+     * @dev External function to add a commitment option. This function can be called only by the owner.
      * @param _bonus Amount of bonus
-     * @param _days Days of duration
-     * @param _penalty Number of penalty
+     * @param _days Commitment duration in days 
+     * @param _penalty The penalty 
      * @param _deciAdjustment Decimal percentage
      */
-    function addCommitment(
-        uint256 _bonus,
-        uint256 _days,
-        uint256 _penalty,
-        uint256 _deciAdjustment
-    ) external onlyOwner {
+    function addCommitment(uint256 _bonus, uint256 _days, uint256 _penalty, uint256 _deciAdjustment) external onlyOwner {
         Commitment memory holder;
 
         holder.bonus = _bonus;
@@ -151,33 +137,30 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to toggle the commitment. This function can be called by only owner.
+     * @dev External function to toggle the commitment. This function can be called only by the owner.
      * @param _index Commitment index
      */
     function toggleCommitment(uint256 _index) external onlyOwner {
-        require(
-            0 < _index && _index < commitmentInfo.length,
-            "Teller: Current index is not listed in the commitment array."
-        );
-
+        require(0 < _index && _index < commitmentInfo.length, "Teller: Current index is not listed in the commitment array.");
         commitmentInfo[_index].isActive = !commitmentInfo[_index].isActive;
 
         emit CommitmentToggled(_index, commitmentInfo[_index].isActive);
     }
 
     /**
-     * @dev External function to set the dev address to give that address the break commitment fees. This function can be called by only owner.
+     * @dev External function to set the dev address to give that address the break commitment fees. This function can be called only by the owner.
      * @param _address Dev address
+     * @param _status If purpose is active or not 
      */
-    function setPurpose(address _address) external onlyOwner {
-        purpose = true;
+    function setPurpose(address _address, bool _status) external onlyOwner {
+        purpose = _status;
         devAddress = _address;
 
         emit PurposeSet(devAddress);
     }
 
     /**
-     * @dev External function to deposit lp token from providers. Teller must be open.
+     * @dev External function for providers to deposit lp tokens. Teller must be open.
      * @param _amount LP token amount
      */
     function depositLP(uint256 _amount) external isTellerOpen {
@@ -206,7 +189,7 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to withdraw lp token from the teller. This function can be called by only provider.
+     * @dev External function to withdraw lp token from the teller. This function can be called only by a provider.
      * @param _amount LP token amount
      */
     function withdraw(uint256 _amount) external isProvider nonReentrant {
@@ -216,13 +199,11 @@ contract Teller is Ownable, ReentrancyGuard {
             user.committedAmount = 0;
             user.commitmentIndex = 0;
         }
-        uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
-            totalLP;
-        require(
-            userTokens - user.committedAmount >= _amount,
-            "Teller: Provider hasn't got enough deposited LP tokens to withdraw."
-        );
+        uint256 userTokens = (user.LPDepositedRatio * contractBalance) / totalLP;
+        require(userTokens - user.committedAmount >= _amount, "Teller: Provider hasn't got enough deposited LP tokens to withdraw.");
+        
         claim();
+        
         uint256 _weightChange = (_amount * user.userWeight) / userTokens;
         user.userWeight -= _weightChange;
         totalWeight -= _weightChange;
@@ -232,9 +213,7 @@ contract Teller is Ownable, ReentrancyGuard {
         uint256 newRatio;
 
         if (difference != 0) {
-            newRatio =
-                ((userTokens - _amount) * (difference)) /
-                (contractBalance - _amount);
+            newRatio = ((userTokens - _amount) * (difference)) / (contractBalance - _amount);
             totalLP = totalLP - oldRatio + newRatio;
         } else {
             if (contractBalance - _amount != 0) {
@@ -253,7 +232,7 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to withdraw lp token when teller is closed. This function can be called by only provider.
+     * @dev External function to withdraw lp token when teller is closed. This function can be called only by a provider.
      */
     function tellerClosedWithdraw() external isTellerClosed isProvider {
         uint256 contractBalance = LpToken.balanceOf(address(this));
@@ -263,12 +242,11 @@ contract Teller is Ownable, ReentrancyGuard {
 
         Provider memory user = providerInfo[msg.sender];
 
-        uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
-            totalLP;
+        uint256 userTokens = (user.LPDepositedRatio * contractBalance) / totalLP;
         totalLP -= user.LPDepositedRatio;
         totalWeight -= user.userWeight;
 
-        delete providerInfo[msg.sender];
+        providerInfo[msg.sender] = Provider(0,0,0,0,0,0);
 
         LpToken.safeTransfer(msg.sender, userTokens);
 
@@ -276,35 +254,27 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to commit lp token to gain a minor advantise for a selected amount of time. This function can be called by only provider.
+     * @dev External function to commit lp token to gain a minor advantage for a selected period of time. This function can be called only by a provider.
      * @param _amount LP token amount
      * @param _commitmentIndex Index of commitment array
      */
-    function commit(uint256 _amount, uint256 _commitmentIndex)
-        external
-        nonReentrant
-        isProvider
-    {
-        require(
-            commitmentInfo[_commitmentIndex].isActive,
-            "Teller: Current commitment is not active."
-        );
-
+    function commit(uint256 _amount, uint256 _commitmentIndex) external nonReentrant isProvider {
+        require(commitmentInfo[_commitmentIndex].isActive, "Teller: Current commitment is not active.");
+        
         Provider storage user = providerInfo[msg.sender];
-
+        
+        uint256 contractBalance = LpToken.balanceOf(address(this));
+        uint256 userTokens = (user.LPDepositedRatio * contractBalance) / totalLP;
+        
+        require(userTokens - user.committedAmount >= _amount, "Teller: Provider hasn't got enough deposited LP tokens to commit.");
+        
         if (user.committedAmount != 0) {
-            require(
-                _commitmentIndex == user.commitmentIndex,
-                "Teller: Current commitment is not same as provider."
-            );
+            require(_commitmentIndex == user.commitmentIndex, "Teller: Commitment index is not the same as providers'.");
         }
 
         uint256 newEndTime;
 
-        if (
-            user.commitmentEndTime >= block.timestamp &&
-            user.committedAmount != 0
-        ) {
+        if (user.commitmentEndTime >= block.timestamp && user.committedAmount != 0) {
             newEndTime = calculateNewEndTime(
                 user.committedAmount,
                 _amount,
@@ -314,24 +284,14 @@ contract Teller is Ownable, ReentrancyGuard {
         } else {
             user.committedAmount = 0;
             user.commitmentIndex = 0;
-            newEndTime =
-                block.timestamp +
-                commitmentInfo[_commitmentIndex].duration;
+            newEndTime = block.timestamp + commitmentInfo[_commitmentIndex].duration;
         }
-
-        uint256 contractBalance = LpToken.balanceOf(address(this));
-        uint256 userTokens = (user.LPDepositedRatio * contractBalance) /
-            totalLP;
-
-        require(
-            userTokens - user.committedAmount >= _amount,
-            "Teller: Provider hasn't got enough deposited LP tokens to commit."
-        );
 
         uint256 weightToGain = (_amount * user.userWeight) / userTokens;
         uint256 bonusCredit = commitBonus(_commitmentIndex, weightToGain);
 
         claim();
+        
         user.commitmentIndex = _commitmentIndex;
         user.committedAmount += _amount;
         user.commitmentEndTime = newEndTime;
@@ -342,25 +302,20 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev External function to break the commitment. This function can be called by only provider.
+     * @dev External function to break the commitment. This function can be called only by a provider.
      */
     function breakCommitment() external nonReentrant isProvider {
         Provider memory user = providerInfo[msg.sender];
 
-        require(
-            user.commitmentEndTime > block.timestamp,
-            "Teller: No commitment to break."
-        );
+        require(user.commitmentEndTime > block.timestamp, "Teller: No commitment to break.");
 
         uint256 contractBalance = LpToken.balanceOf(address(this));
 
-        uint256 tokenToReceive = (user.LPDepositedRatio * contractBalance) /
-            totalLP;
+        uint256 tokenToReceive = (user.LPDepositedRatio * contractBalance) / totalLP;
 
         Commitment memory currentCommit = commitmentInfo[user.commitmentIndex];
 
-        uint256 fee = (user.committedAmount * currentCommit.penalty) /
-            currentCommit.deciAdjustment;
+        uint256 fee = (user.committedAmount * currentCommit.penalty) / currentCommit.deciAdjustment;
 
         tokenToReceive -= fee;
 
@@ -380,11 +335,12 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Private function to claim the vidya token.
+     * @dev Internal function to claim rewards.
      */
-    function claim() private {
+    function claim() internal {
         Provider storage user = providerInfo[msg.sender];
-        //Determines if commitment is over, added here since claim is called in every function.
+        
+        // Determines if commitment is over, added here since claim is called in every function.
         if (user.commitmentEndTime <= block.timestamp) {
             user.committedAmount = 0;
             user.commitmentIndex = 0;
@@ -410,25 +366,19 @@ contract Teller is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Private function to return commit bonus.
+     * @dev Internal function to return commit bonus.
      * @param _commitmentIndex Index of commitment array
      * @param _amount Commitment token amount
      */
-    function commitBonus(uint256 _commitmentIndex, uint256 _amount)
-        private
-        view
-        returns (uint256)
-    {
+    function commitBonus(uint256 _commitmentIndex, uint256 _amount) internal view returns(uint256) {
         if (commitmentInfo[_commitmentIndex].isActive) {
-            return
-                (commitmentInfo[_commitmentIndex].bonus * _amount) /
-                commitmentInfo[_commitmentIndex].deciAdjustment;
+            return (commitmentInfo[_commitmentIndex].bonus * _amount) / commitmentInfo[_commitmentIndex].deciAdjustment;
         }
         return 0;
     }
 
     /**
-     * @dev Private function to calculate the new ending time when the current end time is overflown.
+     * @dev Internal function to calculate the new ending time when the current end time is overflown.
      * @param _oldAmount Commitment lp token amount which provider has
      * @param _extraAmount Lp token amount which user wants to commit
      * @param _oldEndTime Previous commitment ending time
@@ -439,52 +389,29 @@ contract Teller is Ownable, ReentrancyGuard {
         uint256 _extraAmount,
         uint256 _oldEndTime,
         uint256 _commitmentIndex
-    ) private view returns (uint256) {
-        uint256 extraEndTIme = commitmentInfo[_commitmentIndex].duration +
-            block.timestamp;
-        uint256 newEndTime = ((_oldAmount * _oldEndTime) +
-            (_extraAmount * extraEndTIme)) / (_oldAmount + _extraAmount);
-
+    ) internal view returns (uint256) {
+        uint256 extraEndTIme = commitmentInfo[_commitmentIndex].duration + block.timestamp;
+        uint256 newEndTime = ((_oldAmount * _oldEndTime) + (_extraAmount * extraEndTIme)) / (_oldAmount + _extraAmount);
+        
         return newEndTime;
     }
 
     /**
-     * @dev External function to claim the vidya token. This function can be called by only provider and teller must be opened.
+     * @dev External function to claim the reward token. This function can be called only by a provider and teller must be open.
      */
     function claimExternal() external isTellerOpen isProvider nonReentrant {
         claim();
     }
 
     /**
-     * @dev External function to get CommitmentInfo.
-     */
-    function getCommitmentMethods()
-        external
-        view
-        returns (Commitment[] memory)
-    {
-        return commitmentInfo;
-    }
-
-    /**
-     * @dev External function to get User info. This function can be called when only current user has deposits.
+     * @dev External function to get User info. This function can be called from a msg.sender with active deposits. 
      * @return Time of rest committed time
      * @return Committed amount
      * @return Committed Index
      * @return Amount to Claim
      * @return Total LP deposited
      */
-    function getUserInfo()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function getUserInfo() external view returns (uint256, uint256, uint256, uint256, uint256) {
         Provider memory user = providerInfo[msg.sender];
 
         if (user.LPDepositedRatio > 0) {
@@ -493,8 +420,7 @@ contract Teller is Ownable, ReentrancyGuard {
                 (block.timestamp - user.lastClaimedTime) *
                 user.userWeight) / (totalWeight * Vault.totalPriority());
 
-            uint256 totalLPDeposited = (providerInfo[msg.sender]
-                .LPDepositedRatio * LpToken.balanceOf(address(this))) / totalLP;
+            uint256 totalLPDeposited = (providerInfo[msg.sender].LPDepositedRatio * LpToken.balanceOf(address(this))) / totalLP;
 
             if (user.commitmentEndTime > block.timestamp) {
                 return (
@@ -505,6 +431,7 @@ contract Teller is Ownable, ReentrancyGuard {
                     totalLPDeposited
                 );
             } else {
+                // Should it return 0 for commitedAmount and commitedIndex here? 
                 return (0, 0, 0, claimAmount, totalLPDeposited);
             }
         } else {
