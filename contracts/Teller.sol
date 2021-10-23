@@ -385,8 +385,10 @@ contract Teller is Ownable, ReentrancyGuard {
         return newEndTime;
     }
     
-    function commitmentFinished() internal{
-    
+    /**
+     * @dev Internal function to finish a commitment when it has ended.
+     */
+    function commitmentFinished() internal {
         Provider storage user = providerInfo[msg.sender];
         if (user.commitmentEndTime <= block.timestamp) {
             user.committedAmount = 0;
@@ -430,7 +432,6 @@ contract Teller is Ownable, ReentrancyGuard {
                     totalLPDeposited
                 );
             } else {
-                // Should it return 0 for commitedAmount and commitedIndex here? 
                 return (0, 0, 0, claimAmount, totalLPDeposited);
             }
         } else {
