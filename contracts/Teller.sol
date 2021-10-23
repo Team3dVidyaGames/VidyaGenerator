@@ -166,9 +166,10 @@ contract Teller is Ownable, ReentrancyGuard {
     function depositLP(uint256 _amount) external isTellerOpen {
         uint256 contractBalance = LpToken.balanceOf(address(this));
         LpToken.safeTransferFrom(msg.sender, address(this), _amount);
-
+        
         Provider storage user = providerInfo[msg.sender];
         if (user.LPDepositedRatio != 0) {
+            commitmentFinished();
             claim();
         } else {
             user.lastClaimedTime = block.timestamp;
@@ -195,10 +196,7 @@ contract Teller is Ownable, ReentrancyGuard {
     function withdraw(uint256 _amount) external isProvider nonReentrant {
         Provider storage user = providerInfo[msg.sender];
         uint256 contractBalance = LpToken.balanceOf(address(this));
-        if (user.commitmentEndTime <= block.timestamp) {
-            user.committedAmount = 0;
-            user.commitmentIndex = 0;
-        }
+        commitmentFinished();
         uint256 userTokens = (user.LPDepositedRatio * contractBalance) / totalLP;
         require(userTokens - user.committedAmount >= _amount, "Teller: Provider hasn't got enough deposited LP tokens to withdraw.");
         
@@ -262,7 +260,7 @@ contract Teller is Ownable, ReentrancyGuard {
         require(commitmentInfo[_commitmentIndex].isActive, "Teller: Current commitment is not active.");
         
         Provider storage user = providerInfo[msg.sender];
-        
+        commitmentFinished();        
         uint256 contractBalance = LpToken.balanceOf(address(this));
         uint256 userTokens = (user.LPDepositedRatio * contractBalance) / totalLP;
         
@@ -282,8 +280,6 @@ contract Teller is Ownable, ReentrancyGuard {
                 _commitmentIndex
             );
         } else {
-            user.committedAmount = 0;
-            user.commitmentIndex = 0;
             newEndTime = block.timestamp + commitmentInfo[_commitmentIndex].duration;
         }
 
@@ -339,13 +335,6 @@ contract Teller is Ownable, ReentrancyGuard {
      */
     function claim() internal {
         Provider storage user = providerInfo[msg.sender];
-        
-        // Determines if commitment is over, added here since claim is called in every function.
-        if (user.commitmentEndTime <= block.timestamp) {
-            user.committedAmount = 0;
-            user.commitmentIndex = 0;
-        }
-
         uint256 timeGap = block.timestamp - user.lastClaimedTime;
 
         if (!tellerOpen) {
@@ -395,11 +384,21 @@ contract Teller is Ownable, ReentrancyGuard {
         
         return newEndTime;
     }
+    
+    function commitmentFinished() internal{
+    
+        Provider storage user = providerInfo[msg.sender];
+        if (user.commitmentEndTime <= block.timestamp) {
+            user.committedAmount = 0;
+            user.commitmentIndex = 0;
+        }
+    }
 
     /**
      * @dev External function to claim the reward token. This function can be called only by a provider and teller must be open.
      */
     function claimExternal() external isTellerOpen isProvider nonReentrant {
+        commitmentFinished();
         claim();
     }
 
