@@ -190,7 +190,7 @@ contract Teller is Ownable, ReentrancyGuard {
         } else {
             user.lastClaimedTime = block.timestamp;
         }
-        if (contractBalance == totalLP) {
+        if (contractBalance == totalLP || totalLP == 0) {
             user.LPDepositedRatio += _amount;
             totalLP += _amount;
         } else {
