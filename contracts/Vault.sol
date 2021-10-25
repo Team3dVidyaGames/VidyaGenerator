@@ -80,7 +80,10 @@ contract Vault is Ownable, ReentrancyGuard {
      * @param _teller Address of teller
      * @param _newPriority New priority of teller
      */
-    function changePriority(address _teller, uint256 _newPriority) external onlyOwner {
+    function changePriority(address _teller, uint256 _newPriority)
+        external
+        onlyOwner
+    {
         require(
             _teller.isContract() == true,
             "Vault: Address is not a contract."
@@ -106,8 +109,14 @@ contract Vault is Ownable, ReentrancyGuard {
      * @param _providerTimeWeight Weight time of provider
      * @param _totalWeight Sum of provider weight
      */
-    function payProvider(address _provider, uint256 _providerTimeWeight, uint256 _totalWeight) external onlyTeller {
-        uint256 numerator = vidyaRate * _providerTimeWeight * tellerPriority[msg.sender];
+    function payProvider(
+        address _provider,
+        uint256 _providerTimeWeight,
+        uint256 _totalWeight
+    ) external onlyTeller {
+        uint256 numerator = vidyaRate *
+            _providerTimeWeight *
+            tellerPriority[msg.sender];
         uint256 denominator = _totalWeight * totalPriority;
 
         uint256 amount;
