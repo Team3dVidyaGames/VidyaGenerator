@@ -226,8 +226,8 @@ contract Teller is Ownable, ReentrancyGuard {
         user.userWeight -= _weightChange;
         totalWeight -= _weightChange;
 
-        uint256 ratioChange = amount * totalLP/contractBalance;
-        user.LPdepositedRatio -= ratioChange;
+        uint256 ratioChange = _amount * totalLP/contractBalance;
+        user.LPDepositedRatio -= ratioChange;
         totalLP -= ratioChange;
 
 
