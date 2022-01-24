@@ -33,7 +33,7 @@ contract Teller is Ownable, ReentrancyGuard {
     event CommitmentToggled(uint256 index, bool status);
 
     /// @notice Event emitted when owner sets the dev address to get the break commitment fees.
-    event PurposeSet(address devAddress);
+    event PurposeSet(address devAddress, bool purposeStatus);
 
     /// @notice Event emitted when a provider deposits lp tokens.
     event LpDeposited(address provider, uint256 amount);
@@ -172,7 +172,7 @@ contract Teller is Ownable, ReentrancyGuard {
         purpose = _status;
         devAddress = _address;
 
-        emit PurposeSet(devAddress);
+        emit PurposeSet(devAddress, purpose);
     }
 
     /**
@@ -341,10 +341,12 @@ contract Teller is Ownable, ReentrancyGuard {
             totalLP;
 
         Commitment memory currentCommit = commitmentInfo[user.commitmentIndex];
-
+        
+        //fee for breaking the commitment
         uint256 fee = (user.committedAmount * currentCommit.penalty) /
             currentCommit.deciAdjustment;
-
+            
+        //fee reduced from provider and left in teller
         tokenToReceive -= fee;
 
         totalLP -= user.LPDepositedRatio;
@@ -352,11 +354,13 @@ contract Teller is Ownable, ReentrancyGuard {
         totalWeight -= user.userWeight;
 
         providerInfo[msg.sender] = Provider(0, 0, 0, 0, 0, 0);
-
+        
+        //if a devloper purpose is set then transfer to address
         if (purpose) {
             LpToken.safeTransfer(devAddress, fee / 10);
         }
-
+        
+        //Fee is not lost it is dispersed to remaining providers. 
         LpToken.safeTransfer(msg.sender, tokenToReceive);
 
         emit CommitmentBroke(msg.sender, tokenToReceive);
