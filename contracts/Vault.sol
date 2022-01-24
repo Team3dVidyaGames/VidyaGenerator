@@ -64,7 +64,7 @@ contract Vault is Ownable, ReentrancyGuard {
             _teller.isContract() == true,
             "Vault: Address is not a contract."
         );
-        require(teller[_teller] == false, "Vault: Caller is already a teller.");
+        require(!teller[_teller], "Vault: Caller is already a teller.");
         require(_priority > 0, "Vault: Priority should be greater than zero.");
 
         teller[_teller] = true;
