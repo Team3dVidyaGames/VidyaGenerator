@@ -452,7 +452,7 @@ contract Teller is Ownable, ReentrancyGuard {
      * @return Amount to Claim
      * @return Total LP deposited
      */
-    function getUserInfo()
+    function getUserInfo(address _user)
         external
         view
         returns (
@@ -463,7 +463,7 @@ contract Teller is Ownable, ReentrancyGuard {
             uint256
         )
     {
-        Provider memory user = providerInfo[msg.sender];
+        Provider memory user = providerInfo[_user];
 
         if (user.LPDepositedRatio > 0) {
             uint256 claimAmount = (Vault.vidyaRate() *
