@@ -36,19 +36,19 @@ contract Teller is Ownable, ReentrancyGuard {
     event PurposeSet(address devAddress, bool purposeStatus);
 
     /// @notice Event emitted when a provider deposits lp tokens.
-    event LpDeposited(address provider, uint256 amount);
+    event LpDeposited(address indexed provider, uint256 indexed amount);
 
     /// @notice Event emitted when a provider withdraws lp tokens.
-    event Withdrew(address provider, uint256 amount);
+    event Withdrew(address indexed provider, uint256 indexed amount);
 
     /// @notice Event emitted when a provider commits lp tokens.
-    event Commited(address provider, uint256 commitedAmount);
+    event Commited(address indexed provider, uint256 indexed commitedAmount);
 
     /// @notice Event emitted when a provider breaks the commitment.
-    event CommitmentBroke(address provider, uint256 tokenSentAmount);
+    event CommitmentBroke(address indexed provider, uint256 indexed tokenSentAmount);
 
     /// @notice Event emitted when provider claimed rewards.
-    event Claimed(address provider, bool success);
+    event Claimed(address indexed provider, bool indexed success);
 
     struct Provider {
         uint256 LPDepositedRatio;
