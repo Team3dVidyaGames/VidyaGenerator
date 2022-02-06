@@ -24,7 +24,7 @@ contract Vault is Ownable, ReentrancyGuard {
     event TellerPriorityChanged(address teller, uint256 newPriority);
 
     /// @notice Event emitted when tokens are paid to provider.
-    event ProviderPaid(address provider, uint256 vidyaAmount);
+    event ProviderPaid(address indexed provider, uint256 indexed vidyaAmount);
 
     /// @notice Event emitted when token rate is calculated.
     event VidyaRateCalculated(uint256 vidyaRate);
@@ -38,6 +38,7 @@ contract Vault is Ownable, ReentrancyGuard {
     uint256 public totalPriority;
     uint256 public vidyaRate;
     uint256 public timeToCalculateRate;
+    uint256 public totalDistributed;
 
     modifier onlyTeller() {
         require(teller[msg.sender], "Vault: Caller is not a teller.");
@@ -127,7 +128,7 @@ contract Vault is Ownable, ReentrancyGuard {
         if (timeToCalculateRate <= block.timestamp) {
             _calculateRate();
         }
-
+        totalDistributed += amount;
         Vidya.safeTransfer(_provider, amount);
 
         emit ProviderPaid(_provider, amount);
