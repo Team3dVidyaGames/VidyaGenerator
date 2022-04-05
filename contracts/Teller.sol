@@ -470,7 +470,7 @@ contract Teller is Ownable, ReentrancyGuard {
         Provider memory user = providerInfo[_user];
 
         if (user.LPDepositedRatio > 0) {
-            uint256 claimAmount = (Vault.vidyaRate() *
+            uint256 claimAmount = (Vault.rewardRate() *
                 Vault.tellerPriority(address(this)) *
                 (block.timestamp - user.lastClaimedTime) *
                 user.userWeight) / (totalWeight * Vault.totalPriority());
