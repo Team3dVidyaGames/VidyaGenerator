@@ -8,7 +8,7 @@ interface IVault {
     /**
      * @dev External function to get vidya rate.
      */
-    function vidyaRate() external view returns (uint256);
+    function rewardRate() external view returns (uint256);
 
     /**
      * @dev External function to get total priority.
