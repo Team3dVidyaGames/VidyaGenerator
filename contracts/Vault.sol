@@ -24,19 +24,19 @@ contract Vault is Ownable, ReentrancyGuard {
     event TellerPriorityChanged(address teller, uint256 newPriority);
 
     /// @notice Event emitted when tokens are paid to provider.
-    event ProviderPaid(address indexed provider, uint256 indexed vidyaAmount);
+    event ProviderPaid(address indexed provider, uint256 indexed rewardAmount);
 
     /// @notice Event emitted when token rate is calculated.
-    event VidyaRateCalculated(uint256 vidyaRate);
+    event RewardRateCalculated(uint256 rewardRate);
 
-    IERC20 public Vidya;
+    IERC20 public Reward;
 
     mapping(address => bool) public teller;
     mapping(address => uint256) public tellerPriority;
     mapping(address => uint256) public priorityFreeze;
 
     uint256 public totalPriority;
-    uint256 public vidyaRate;
+    uint256 public rewardRate;
     uint256 public timeToCalculateRate;
     uint256 public totalDistributed;
 
@@ -47,10 +47,10 @@ contract Vault is Ownable, ReentrancyGuard {
 
     /**
      * @dev Constructor function
-     * @param _Vidya Interface of Vidya token => 0x3D3D35bb9bEC23b06Ca00fe472b50E7A4c692C30
+     * @param _Reward Interface of Reward token => Sample"Vidya"(0x3D3D35bb9bEC23b06Ca00fe472b50E7A4c692C30)
      */
-    constructor(IERC20 _Vidya) {
-        Vidya = _Vidya;
+    constructor(IERC20 _Reward) {
+        Reward = _Reward;
 
         emit VaultDeployed();
     }
@@ -115,7 +115,7 @@ contract Vault is Ownable, ReentrancyGuard {
         uint256 _providerTimeWeight,
         uint256 _totalWeight
     ) external onlyTeller {
-        uint256 numerator = vidyaRate *
+        uint256 numerator = rewardRate *
             _providerTimeWeight *
             tellerPriority[msg.sender];
         uint256 denominator = _totalWeight * totalPriority;
@@ -129,7 +129,7 @@ contract Vault is Ownable, ReentrancyGuard {
             _calculateRate();
         }
         totalDistributed += amount;
-        Vidya.safeTransfer(_provider, amount);
+        Reward.safeTransfer(_provider, amount);
 
         emit ProviderPaid(_provider, amount);
     }
@@ -138,10 +138,10 @@ contract Vault is Ownable, ReentrancyGuard {
      * @dev Internal function to calculate the token Rate.
      */
     function _calculateRate() internal {
-        vidyaRate = Vidya.balanceOf(address(this)) / 26 weeks; // 6 months
+        rewardRate = Reward.balanceOf(address(this)) / 26 weeks; // 6 months
         timeToCalculateRate = block.timestamp + 1 weeks;
 
-        emit VidyaRateCalculated(vidyaRate);
+        emit RewardRateCalculated(rewardRate);
     }
 
     /**
