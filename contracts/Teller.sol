@@ -475,7 +475,7 @@ contract Teller is Ownable, ReentrancyGuard {
                 (block.timestamp - user.lastClaimedTime) *
                 user.userWeight) / (totalWeight * Vault.totalPriority());
 
-            uint256 totalLPDeposited = (providerInfo[msg.sender]
+            uint256 totalLPDeposited = (providerInfo[_user]
                 .LPDepositedRatio * LpToken.balanceOf(address(this))) / totalLP;
 
             if (user.commitmentEndTime > block.timestamp) {
